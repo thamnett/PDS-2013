@@ -9,12 +9,16 @@ import json
 import operator
 from pprint import pprint
 
+#read in data as a list of json dicts
+
 data = []
 with open('user_tag_activity.json', 'r') as f:
     for line in f:
         data.append(json.loads(line))
 
 clean_data = []
+
+#if any value in the json dict is NULL, ignore; otherwise, add to the clean data
 
 for line in data:
     x = 0
@@ -29,9 +33,12 @@ for line in data:
         pass
     
 
+
 user_set = set()
 object_set = set()
 response_set = set()
+
+#create sets to count unique values in the total data
 
 for line in data:
     user_set.add(line.get("user"))
@@ -48,6 +55,9 @@ count_user = {}
 accept_response = {}
 reject_response = {}
 count_response = {}
+
+#count the various rejects and accepts by user and response 
+#in the clean data and store in dicts
 
 for line in clean_data:
     
@@ -91,6 +101,8 @@ rejrate_user = {}
 accrate_user = {}
 rejrate_response = {}
 
+#calculate the rejection and acceptance rates for users and responses as dicts
+
 for key, value in reject_user.iteritems():
     rejrate_user[key] = value / float(count_user.get(key))
 
@@ -109,11 +121,15 @@ rejratelst_user = []
 accratelst_user = []
 rejratelst_response = []
 
+#sort the dicts into lists to find the largest values
+
 rejlst_user = sorted(reject_user.iteritems(), key=operator.itemgetter(1), reverse = True)
 acclst_user = sorted(accept_user.iteritems(), key=operator.itemgetter(1), reverse = True)
 rejratelst_user = sorted(rejrate_user.iteritems(), key=operator.itemgetter(1), reverse = True)
 accratelst_user = sorted(accrate_user.iteritems(), key=operator.itemgetter(1), reverse = True)
 rejratelst_response = sorted(rejrate_response.iteritems(), key=operator.itemgetter(1), reverse = True)
+
+#calculate the false positives ("red herrings") by exclusing the top rejections and acceptances
 
 response_redherr = 0
 for item in rejratelst_response[0:5]:
@@ -129,20 +145,26 @@ for item in acclst_user[0:5]:
     else:
         accept_redherr += int(reject_user.get(item[0]))
 
+#print results of top 5 rates and counts, and the false positives by exclusing them
+#note: for the rates, more than five have 100% rejection rates
 
 print "\nThe 5 users with the highest rejection rates are: \n%s" % "\n".join(map(str, rejratelst_user[0:5]))
 print "\nThe 5 users with the highest rejections are: \n%s" % "\n".join(map(str, rejlst_user[0:5]))
 print "\nThe 5 responses with the highest rejection rates are: \n%s" % "\n".join(map(str, rejratelst_response[0:5]))
-print "\nIf we were to try to automate the rejection process by rejecting the these responses,\n"
+print "\nIf we were to try to automate the rejection process by rejecting the these responses,"
 print " %i good (accepted) tags would erroneously be rejected" % response_redherr
 print "\nThe 5 users with the highest acceptances are: \n%s" % "\n".join(map(str, acclst_user[0:5]))
-print "\nIf one were to always accept responses from these users, \n" 
+print "\nIf one were to always accept responses from these users," 
 print "%i bad tags would erroneously be accepted" % accept_redherr
+
+#create a list from the sorted accpetance rates to prepare for plotting
 
 accrate_plot = []
 for line in accratelst_user:
     accrate_plot.append(line[1])
     
+#plot distribution rates, from largest to smallest
+
 plt.plot(accrate_plot)
 plt.ylim(ymin = -.2)
 plt.ylim(ymax = 1.2)
